@@ -1,0 +1,19 @@
+version: "3" # keep deprecated version attribute for compatibility with old docker compose versions
+
+networks:
+  computer-management-net:
+
+services:
+  computer-management:
+    build: .
+    networks:
+      - computer-management-net
+    ports:
+      - 5000:5000
+
+  admin-notification:
+    image: greenbone/exercise-admin-notification:latest
+    networks:
+      - computer-management-net
+    ports:
+      - 8080:8080

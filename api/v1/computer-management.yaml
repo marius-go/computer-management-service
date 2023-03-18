@@ -1,0 +1,168 @@
+---
+swagger: '2.0'
+info:
+  title: computer management
+  version: 1.0.0
+schemes:
+  - http
+basePath: /api/v1
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /computer:
+    post:
+      tags: ["computer"]
+      operationId: createComputer
+      summary: create a new computer entry
+      parameters:
+        - in: body
+          name: computer
+          description: computer object to be added to the service
+          required: true
+          schema:
+            $ref: "#/definitions/newComputer"
+      responses:
+        '201':
+          description: created
+          schema:
+              $ref: "#/definitions/computer"
+        '400':
+          $ref: "#/responses/badRequest"
+        '409':
+          description: already exists
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: error
+          schema:
+            $ref: "#/definitions/error"
+    put:
+      tags: ["computer"]
+      operationId: updateComputer
+      summary: update an existing computer
+      parameters:
+        - in: body
+          name: computer
+          description: desired new state of Computer
+          required: true
+          schema:
+            $ref: "#/definitions/computer"
+      responses:
+        '200':
+          description: updated
+          schema:
+              $ref: "#/definitions/computer"
+        '400':
+          $ref: "#/responses/badRequest"
+        '404':
+          $ref: "#/responses/notFound"
+        default:
+          description: error
+          schema:
+            $ref: "#/definitions/error"
+    get:
+      tags: ["computer"]
+      operationId: listComputers
+      summary: list computers
+      parameters:
+        - in: query
+          type: string
+          name: employeeAbbreviation
+          description: filter computer by employee abbreviation
+          required: false
+      responses:
+        '200':
+          description: OK
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/computer"
+        default:
+          description: error
+          schema:
+            $ref: "#/definitions/error"
+  /computer/{computerName}:
+    get:
+      tags: ["computer"]
+      operationId: getComputer
+      summary: find computer by name
+      parameters:
+        - in: path
+          type: string
+          name: computerName
+          description: name of the computer 
+          required: true
+      responses:
+        '200':
+          description: OK
+          schema:
+            $ref: "#/definitions/computer"
+        '404':
+          $ref: "#/responses/notFound"
+        default:
+          description: error
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags: ["computer"]
+      operationId: deleteComputer 
+      summary: remove computer from the service
+      parameters:
+        - in: path
+          type: string
+          name: computerName
+          description: name of the computer to be removed from the service
+          required: true
+      responses:
+        '204':
+          description: removed
+        '404':
+          $ref: "#/responses/notFound"
+        default:
+          description: error
+          schema:
+            $ref: "#/definitions/error"
+responses:
+  notFound:
+    description: the specified resource was not found
+    schema:
+      $ref: '#/definitions/error'
+  badRequest:
+    description: bad request
+    schema:
+      $ref: "#/definitions/error"
+definitions:
+  computer:
+    type: object
+    required:
+      - name
+    properties:
+      mac:
+        type: string
+      name:
+        type: string
+      ip:
+        type: string
+      employeeAbbreviation:
+        type: string
+      description:
+        type: string
+  error:
+    type: object
+    required:
+       - message
+    properties:
+      code:
+        type: integer
+        format: int64
+      message:
+        type: string
+  newComputer:
+    allOf:
+      - $ref: '#/definitions/computer'
+      - type: object
+        required:
+          - mac
+          - ip
