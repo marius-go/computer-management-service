@@ -4,20 +4,38 @@ package restapi
 
 import (
 	"crypto/tls"
+	goerrors "errors"
 	"net/http"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
+	"github.com/go-openapi/swag"
 
+	"github.com/marius-go/computer-management-service/gen/controller/rest/models"
 	"github.com/marius-go/computer-management-service/gen/controller/rest/restapi/operations"
 	"github.com/marius-go/computer-management-service/gen/controller/rest/restapi/operations/computer"
+	"github.com/marius-go/computer-management-service/internal/controller/rest"
+	"github.com/marius-go/computer-management-service/internal/core/domain"
+	computersrv "github.com/marius-go/computer-management-service/internal/core/service/computer"
+	"github.com/marius-go/computer-management-service/internal/infrastructure/adminnotifier"
+	"github.com/marius-go/computer-management-service/internal/infrastructure/memstorage"
 )
 
-//go:generate swagger generate server --target ../../rest --name ComputerManagement --spec ../../../../api/v1/computer-management.yaml --principal interface{}
+//go:generate swagger generate server --target ../../gen --name ComputerManagement --spec ../../api/v1/computer-management.yaml --principal interface{}
+
+var configurationFlags = struct {
+	NotificationServiceAddress string `long:"notification-service" description:"optional: address of the admin notifications service" default:"http://localhost:8080"`
+}{}
 
 func configureFlags(api *operations.ComputerManagementAPI) {
-	// api.CommandLineOptionsGroups = []swag.CommandLineOptionsGroup{ ... }
+	api.CommandLineOptionsGroups = []swag.CommandLineOptionsGroup{
+		{
+			ShortDescription: "Computer Service Flags",
+			LongDescription:  "",
+			Options:          &configurationFlags,
+		},
+	}
 }
 
 func configureAPI(api *operations.ComputerManagementAPI) http.Handler {
@@ -37,6 +55,120 @@ func configureAPI(api *operations.ComputerManagementAPI) http.Handler {
 	api.JSONConsumer = runtime.JSONConsumer()
 
 	api.JSONProducer = runtime.JSONProducer()
+
+	storage := memstorage.New()
+	adminNotifier := adminnotifier.New(&http.Client{}, configurationFlags.NotificationServiceAddress)
+	computerService := computersrv.New(storage, adminNotifier)
+
+	api.ComputerCreateComputerHandler = computer.CreateComputerHandlerFunc(
+		func(params computer.CreateComputerParams) middleware.Responder {
+
+			comp := rest.NewComputerRestModelToDomain(*params.Computer)
+
+			insertedComputer, err := computerService.CreateComputer(comp)
+			if err != nil {
+				errorMessage := err.Error()
+				errPayload := models.Error{Message: &errorMessage}
+				var errConflict domain.ErrConflict
+				var errValidation domain.ErrValidation
+				switch {
+				case goerrors.As(err, &errConflict):
+					return computer.NewCreateComputerConflict().WithPayload(&errPayload)
+				case goerrors.As(err, &errValidation):
+					return computer.NewCreateComputerBadRequest().WithPayload(&errPayload)
+				default:
+					return computer.NewCreateComputerDefault(500).WithPayload(&errPayload)
+				}
+			}
+
+			responsePayload := rest.ComputerRestModelFromDomain(insertedComputer)
+			return computer.NewCreateComputerCreated().WithPayload(&responsePayload)
+		},
+	)
+
+	api.ComputerDeleteComputerHandler = computer.DeleteComputerHandlerFunc(
+		func(params computer.DeleteComputerParams) middleware.Responder {
+
+			err := computerService.DeleteComputer(params.ComputerName)
+			if err != nil {
+				errorMessage := err.Error()
+				errPayload := models.Error{Message: &errorMessage}
+				switch {
+				case goerrors.Is(err, domain.ErrNotFound):
+					return computer.NewDeleteComputerNotFound().WithPayload(&errPayload)
+				default:
+					return computer.NewDeleteComputerDefault(500).WithPayload(&errPayload)
+				}
+			}
+
+			return computer.NewDeleteComputerNoContent()
+		},
+	)
+
+	api.ComputerGetComputerHandler = computer.GetComputerHandlerFunc(
+		func(params computer.GetComputerParams) middleware.Responder {
+
+			comp, err := computerService.GetComputer(params.ComputerName)
+			if err != nil {
+				errorMessage := err.Error()
+				errPayload := models.Error{Message: &errorMessage}
+				switch {
+				case goerrors.Is(err, domain.ErrNotFound):
+					return computer.NewGetComputerNotFound().WithPayload(&errPayload)
+				default:
+					return computer.NewGetComputerDefault(500).WithPayload(&errPayload)
+				}
+			}
+
+			responsePayload := rest.ComputerRestModelFromDomain(comp)
+			return computer.NewGetComputerOK().WithPayload(&responsePayload)
+		})
+
+	api.ComputerListComputersHandler = computer.ListComputersHandlerFunc(func(params computer.ListComputersParams) middleware.Responder {
+
+		employeeAbbreviation := params.EmployeeAbbreviation
+		if employeeAbbreviation != nil && (*employeeAbbreviation == "\"\"" || *employeeAbbreviation == "''") { // "" and '' should be interpreted as empty string
+			*employeeAbbreviation = ""
+		}
+
+		computers, err := computerService.ListComputers(employeeAbbreviation)
+		if err != nil {
+			errorMessage := err.Error()
+			errPayload := models.Error{Message: &errorMessage}
+			computer.NewCreateComputerDefault(500).WithPayload(&errPayload)
+		}
+
+		responsePayload := make([]*models.Computer, 0, len(computers))
+		for _, comp := range computers {
+			restModel := rest.ComputerRestModelFromDomain(comp)
+			responsePayload = append(responsePayload, &restModel)
+		}
+		return computer.NewListComputersOK().WithPayload(responsePayload)
+	})
+
+	api.ComputerUpdateComputerHandler = computer.UpdateComputerHandlerFunc(func(params computer.UpdateComputerParams) middleware.Responder {
+
+		comp := rest.ComputerRestModelToDomain(*params.Computer)
+
+		updatedComputer, err := computerService.UpdateComputer(comp)
+		if err != nil {
+			errorMessage := err.Error()
+			errPayload := models.Error{Message: &errorMessage}
+			var errValidation domain.ErrValidation
+			switch {
+			case goerrors.As(err, &errValidation):
+				return computer.NewUpdateComputerBadRequest().WithPayload(&errPayload)
+			case goerrors.Is(err, domain.ErrNotFound):
+				return computer.NewUpdateComputerNotFound().WithPayload(&errPayload)
+			default:
+				return computer.NewUpdateComputerDefault(500).WithPayload(&errPayload)
+			}
+
+		}
+
+		responsePayload := rest.ComputerRestModelFromDomain(updatedComputer)
+		return computer.NewUpdateComputerOK().WithPayload(&responsePayload)
+	})
 
 	if api.ComputerCreateComputerHandler == nil {
 		api.ComputerCreateComputerHandler = computer.CreateComputerHandlerFunc(func(params computer.CreateComputerParams) middleware.Responder {
