@@ -16,32 +16,52 @@ func New() *MemoryStorage {
 	return &MemoryStorage{computers: computers}
 }
 
-func (s *MemoryStorage) CreateComputer(domain.Computer) (domain.Computer, error) {
+func (s *MemoryStorage) CreateComputer(computer domain.Computer) (domain.Computer, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	return domain.Computer{}, nil
+
+	comp := ComputerFromDomain(computer)
+	s.computers[computer.Name] = comp
+
+	return comp.ToDomain(), nil
 }
 
-func (s *MemoryStorage) UpdateComputer(domain.Computer) (domain.Computer, error) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	return domain.Computer{}, nil
+func (s *MemoryStorage) UpdateComputer(computer domain.Computer) (domain.Computer, error) {
+	return s.CreateComputer(computer)
 }
 
 func (s *MemoryStorage) DeleteComputer(name string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
+
+	delete(s.computers, name)
+
 	return nil
 }
 
 func (s *MemoryStorage) GetComputer(name string) (domain.Computer, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	return domain.Computer{}, nil
+
+	computer, ok := s.computers[name]
+	if !ok {
+		return domain.Computer{}, domain.ErrNotFound
+	}
+
+	return computer.ToDomain(), nil
 }
 
-func (s *MemoryStorage) ListComputers(employeeAbbreviation string) ([]domain.Computer, error) {
-	s.lock.Lock()
+func (s *MemoryStorage) ListComputers(employeeAbbreviation *string) ([]domain.Computer, error) {
+	s.lock.RLock()
 	defer s.lock.RUnlock()
-	return nil, nil
+
+	computers := []domain.Computer{}
+
+	for _, computer := range s.computers {
+		if employeeAbbreviation == nil || computer.EmployeeAbbreviation == *employeeAbbreviation {
+			computers = append(computers, computer.ToDomain())
+		}
+	}
+
+	return computers, nil
 }
