@@ -13,7 +13,11 @@ import (
 
 // UpdateComputerURL generates an URL for the update computer operation
 type UpdateComputerURL struct {
+	UpdateMask *string
+
 	_basePath string
+	// avoid unkeyed usage
+	_ struct{}
 }
 
 // WithBasePath sets the base path for this url builder, only required when it's different from the
@@ -42,6 +46,18 @@ func (o *UpdateComputerURL) Build() (*url.URL, error) {
 		_basePath = "/api/v1"
 	}
 	_result.Path = golangswaggerpaths.Join(_basePath, _path)
+
+	qs := make(url.Values)
+
+	var updateMaskQ string
+	if o.UpdateMask != nil {
+		updateMaskQ = *o.UpdateMask
+	}
+	if updateMaskQ != "" {
+		qs.Set("updateMask", updateMaskQ)
+	}
+
+	_result.RawQuery = qs.Encode()
 
 	return &_result, nil
 }

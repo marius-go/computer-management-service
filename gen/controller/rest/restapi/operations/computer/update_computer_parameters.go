@@ -12,6 +12,7 @@ import (
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
+	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/validate"
 
 	"github.com/marius-go/computer-management-service/gen/controller/rest/models"
@@ -39,6 +40,10 @@ type UpdateComputerParams struct {
 	  In: body
 	*/
 	Computer *models.Computer
+	/*json paths of the properties to be updated as comma separated list (if unset all properties will be updated)
+	  In: query
+	*/
+	UpdateMask *string
 }
 
 // BindRequest both binds and validates a request, it assumes that complex things implement a Validatable(strfmt.Registry) error interface
@@ -49,6 +54,8 @@ func (o *UpdateComputerParams) BindRequest(r *http.Request, route *middleware.Ma
 	var res []error
 
 	o.HTTPRequest = r
+
+	qs := runtime.Values(r.URL.Query())
 
 	if runtime.HasBody(r) {
 		defer r.Body.Close()
@@ -77,8 +84,31 @@ func (o *UpdateComputerParams) BindRequest(r *http.Request, route *middleware.Ma
 	} else {
 		res = append(res, errors.Required("computer", "body", ""))
 	}
+
+	qUpdateMask, qhkUpdateMask, _ := qs.GetOK("updateMask")
+	if err := o.bindUpdateMask(qUpdateMask, qhkUpdateMask, route.Formats); err != nil {
+		res = append(res, err)
+	}
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
+	return nil
+}
+
+// bindUpdateMask binds and validates parameter UpdateMask from query.
+func (o *UpdateComputerParams) bindUpdateMask(rawData []string, hasKey bool, formats strfmt.Registry) error {
+	var raw string
+	if len(rawData) > 0 {
+		raw = rawData[len(rawData)-1]
+	}
+
+	// Required: false
+	// AllowEmptyValue: false
+
+	if raw == "" { // empty values pass all other validations
+		return nil
+	}
+	o.UpdateMask = &raw
+
 	return nil
 }

@@ -301,10 +301,10 @@ func (o *ComputerManagementAPI) initHandlerCache() {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
 	o.handlers["GET"]["/computer"] = computer.NewListComputers(o.context, o.ComputerListComputersHandler)
-	if o.handlers["PUT"] == nil {
-		o.handlers["PUT"] = make(map[string]http.Handler)
+	if o.handlers["PATCH"] == nil {
+		o.handlers["PATCH"] = make(map[string]http.Handler)
 	}
-	o.handlers["PUT"]["/computer"] = computer.NewUpdateComputer(o.context, o.ComputerUpdateComputerHandler)
+	o.handlers["PATCH"]["/computer"] = computer.NewUpdateComputer(o.context, o.ComputerUpdateComputerHandler)
 }
 
 // Serve creates a http handler to serve the API over HTTP

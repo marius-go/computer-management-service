@@ -38,7 +38,7 @@ paths:
           description: error
           schema:
             $ref: "#/definitions/error"
-    put:
+    patch:
       tags: ["computer"]
       operationId: updateComputer
       summary: update an existing computer
@@ -49,6 +49,11 @@ paths:
           required: true
           schema:
             $ref: "#/definitions/computer"
+        - in: query
+          type: string
+          name: updateMask
+          description: json paths of the properties to be updated as comma separated list (if unset all properties will be updated)
+          required: false
       responses:
         '200':
           description: updated

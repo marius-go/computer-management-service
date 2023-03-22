@@ -67,44 +67,6 @@ func init() {
           }
         }
       },
-      "put": {
-        "tags": [
-          "computer"
-        ],
-        "summary": "update an existing computer",
-        "operationId": "updateComputer",
-        "parameters": [
-          {
-            "description": "desired new state of Computer",
-            "name": "computer",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/computer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "updated",
-            "schema": {
-              "$ref": "#/definitions/computer"
-            }
-          },
-          "400": {
-            "$ref": "#/responses/badRequest"
-          },
-          "404": {
-            "$ref": "#/responses/notFound"
-          },
-          "default": {
-            "description": "error",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      },
       "post": {
         "tags": [
           "computer"
@@ -137,6 +99,50 @@ func init() {
             "schema": {
               "$ref": "#/definitions/error"
             }
+          },
+          "default": {
+            "description": "error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "computer"
+        ],
+        "summary": "update an existing computer",
+        "operationId": "updateComputer",
+        "parameters": [
+          {
+            "description": "desired new state of Computer",
+            "name": "computer",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/computer"
+            }
+          },
+          {
+            "type": "string",
+            "description": "json paths of the properties to be updated as comma separated list (if unset all properties will be updated)",
+            "name": "updateMask",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "updated",
+            "schema": {
+              "$ref": "#/definitions/computer"
+            }
+          },
+          "400": {
+            "$ref": "#/responses/badRequest"
+          },
+          "404": {
+            "$ref": "#/responses/notFound"
           },
           "default": {
             "description": "error",
@@ -332,50 +338,6 @@ func init() {
           }
         }
       },
-      "put": {
-        "tags": [
-          "computer"
-        ],
-        "summary": "update an existing computer",
-        "operationId": "updateComputer",
-        "parameters": [
-          {
-            "description": "desired new state of Computer",
-            "name": "computer",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/computer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "updated",
-            "schema": {
-              "$ref": "#/definitions/computer"
-            }
-          },
-          "400": {
-            "description": "bad request",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "404": {
-            "description": "the specified resource was not found",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "default": {
-            "description": "error",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      },
       "post": {
         "tags": [
           "computer"
@@ -408,6 +370,56 @@ func init() {
           },
           "409": {
             "description": "already exists",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "error",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "computer"
+        ],
+        "summary": "update an existing computer",
+        "operationId": "updateComputer",
+        "parameters": [
+          {
+            "description": "desired new state of Computer",
+            "name": "computer",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/computer"
+            }
+          },
+          {
+            "type": "string",
+            "description": "json paths of the properties to be updated as comma separated list (if unset all properties will be updated)",
+            "name": "updateMask",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "updated",
+            "schema": {
+              "$ref": "#/definitions/computer"
+            }
+          },
+          "400": {
+            "description": "bad request",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "the specified resource was not found",
             "schema": {
               "$ref": "#/definitions/error"
             }

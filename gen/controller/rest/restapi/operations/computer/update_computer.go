@@ -30,7 +30,7 @@ func NewUpdateComputer(ctx *middleware.Context, handler UpdateComputerHandler) *
 }
 
 /*
-	UpdateComputer swagger:route PUT /computer computer updateComputer
+	UpdateComputer swagger:route PATCH /computer computer updateComputer
 
 update an existing computer
 */
