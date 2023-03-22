@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	goerrors "errors"
 	"net/http"
+	"strings"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
@@ -148,7 +149,12 @@ func configureAPI(api *operations.ComputerManagementAPI) http.Handler {
 
 	api.ComputerUpdateComputerHandler = computer.UpdateComputerHandlerFunc(func(params computer.UpdateComputerParams) middleware.Responder {
 
-		comp := rest.ComputerRestModelToDomain(*params.Computer)
+		var propertiesToUpdate []string
+		if params.UpdateMask != nil {
+			propertiesToUpdate = strings.Split(*params.UpdateMask, ",")
+		}
+
+		comp := rest.ComputerRestModelToDomain(*params.Computer, propertiesToUpdate)
 
 		updatedComputer, err := computerService.UpdateComputer(comp)
 		if err != nil {
